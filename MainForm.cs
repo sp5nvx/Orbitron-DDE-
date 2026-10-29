@@ -173,27 +173,33 @@ namespace ClientWin
         }
         string reverse180(string input)
         {
-            string output = "";
-            int i = input.IndexOf("AZ");
-            if (i > 1)
+            try
             {
-                // AZ123.1 
-                int j = input.IndexOf(" ",i);
-                int k = input.IndexOf(".", i);
-                if (k > i) j = k;
-                if (j > i)
+                string output = "";
+                int i = input.IndexOf("AZ");
+                if (i > 1)
                 {
-                    string ss = input.Substring(i + 2, j - (i + 2));
-                    int az = Convert.ToInt32(ss);
-                    az += 180;
-                    if ((az) >= 360)
-                        az = az - 360;
-                    output = input.Substring(0, i + 2);
-                    output += az.ToString();
-                    output += input.Substring(j);
+                    // AZ123.1 
+                    int j = input.IndexOf(" ", i);
+                    int k = input.IndexOf(".", i);
+                    if (k > i) j = k;
+                    if (j > i)
+                    {
+                        string ss = input.Substring(i + 2, j - (i + 2));
+                        double daz = Convert.ToDouble(ss);
+                        daz = daz * 10.0;
+                        int az = Convert.ToInt32(daz);
+                        az += 1800;
+                        if ((az) >= 3600)
+                            az = az - 3600;
+                        az = az / 10;
+                        output = input.Substring(0, i + 2);
+                        output += az.ToString();
+                        output += input.Substring(j);
+                    }
                 }
-            }
-            return output;
+                return output;
+            }catch { return ""; }
         }
         private void client_Advise(object sender, DdeAdviseEventArgs args)
         {
@@ -210,14 +216,17 @@ namespace ClientWin
             if (cb_180.Checked) 
                 arg = reverse180(args.Text);
 
+            if (arg.Length <= 2) return;
+
             displayTextBox.Text = "Orbitron data: " + args.Text;
 
             // Tu sprawdzimy czy zmieniono satelitê bo wtedy wyzerujemy dn i up
             string _sat = sat;
-            int a = args.Text.IndexOf(" ");
+            
             try
             {
-                if(a>0)
+                int a = args.Text.IndexOf(" ");
+                if (a>0)
                  sat = args.Text.Substring(0, a);
 
                 if (_sat != "")
@@ -326,7 +335,7 @@ namespace ClientWin
                 cbOpenCOM.Checked = false;
                 MessageBox.Show(ex.Message);
                 if (COM.IsOpen) COM.Close();
-                if (cb_WriteOnRead.Checked) cb_WriteOnRead.Checked = false;
+                if (cb_Predict500ms.Checked) cb_Predict500ms.Checked = false;
             }
         }
 
@@ -365,7 +374,9 @@ namespace ClientWin
         {
             lbT.Text = tbWrite.Value.ToString()+" [s]";
             
-            if (tbWrite.Value >= 1) timer.Interval = tbWrite.Value * 1000;            
+            if (tbWrite.Value >= 1) timer.Interval = tbWrite.Value * 1000;     
+            
+            if(tbWrite.Value > 1) { cb_Predict500ms.Checked = false; }       
         }
 
         private void timer_Tick(object sender, EventArgs e)
@@ -443,13 +454,15 @@ namespace ClientWin
 
         private void cb_WriteOnRead_CheckedChanged(object sender, EventArgs e)
         {
-            if (cb_WriteOnRead.Checked) { tbWrite.Value = 1; tbWrite.Enabled = false; btTest_Click(this, null); }
+            if (cb_Predict500ms.Checked) { tbWrite.Value = 1; tbWrite.Enabled = false; btTest_Click(this, null); }
             else { tbWrite.Enabled = true; up = 0L; dn = 0L; }
+            cbDN.Checked = true;
+            cbUP.Checked = true;
         }
 
         private void timer_500_Tick(object sender, EventArgs e)
         {
-            if (cb_WriteOnRead.Checked)
+            if (cb_Predict500ms.Checked)
             {
                 try
                 {
@@ -474,15 +487,18 @@ namespace ClientWin
                     if (_up == 0L) { _up = up; }
                     // Obliczam predykcjê DN                   
                     if (_dn < dn) // roœnie
-                    { dn = dn + ((dn - _dn) / 2L); }
+                    ///{ dn = dn + ((dn - _dn) / 2L); }
+                    { dn = (long)Math.Round((double)((double)dn + (double)(dn - _dn) / 2L),MidpointRounding.AwayFromZero); }
                     else
-                    { dn = dn - ((_dn - dn) / 2L); } // maleje
+                    ///{ dn = dn - ((_dn - dn) / 2L); } // maleje
+                    { dn = (long)Math.Round((double)((double)dn - (double)(dn - _dn) / 2L),MidpointRounding.AwayFromZero); }
                     // Obliczam predykcjê UP
                     if (_up < up) // roœnie
-                    { up = up + ((up - _up) / 2L); }
+                    ///{ up = up + ((up - _up) / 2L); }
+                    { up = (long)Math.Round((double)((double)up + (double)(up - _up) / 2L), MidpointRounding.AwayFromZero); }
                     else
-                    { up = up - ((_up - up) / 2L); } // maleje
-
+                    ///{ up = up - ((_up - up) / 2L); } // maleje
+                    { up = (long)Math.Round((double)((double)up - (double)(up - _up) / 2L), MidpointRounding.AwayFromZero); }
                     if (COM.IsOpen)
                     {
                         cbOpenCOM.BackColor = Color.Chartreuse;
@@ -494,8 +510,8 @@ namespace ClientWin
                         // Wstawiamy do "wr" nowe wartoœci z predykcji (uwaga na rozmiar i spacje)
                         wr = wr.Replace(wr.Substring(a + 2, b - (a + 2)), sdn);
                         wr = wr.Replace(wr.Substring(cc + 2, d - (cc + 2)), sup);
-                                          
-                        
+
+
                         char[] c = new char[1];
 
                         for (int i = 0; i < wr.Length - 1; i++)
