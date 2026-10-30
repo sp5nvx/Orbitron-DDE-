@@ -26,6 +26,7 @@ namespace ClientWin
             client = new DdeClient("Orbitron", "Tracking", this);
             client.Advise += client_Advise;
             client.Disconnected += client_Disconnected;
+            
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -49,7 +50,21 @@ namespace ClientWin
                     if (OrbitronDDE_nvx.Properties.Settings.Default._tbWrite < 21)
                     timer.Interval = OrbitronDDE_nvx.Properties.Settings.Default._tbWrite * 1000;
                 lbT.Text = tbWrite.Value.ToString() + " [s]";
-            }
+
+                if(OrbitronDDE_nvx.Properties.Settings.Default._tbWrite==1)
+                    cb_Predict500ms.Checked = OrbitronDDE_nvx.Properties.Settings.Default._cb05s;
+                         
+                this.Top = OrbitronDDE_nvx.Properties.Settings.Default.WinTop;
+                this.Left = OrbitronDDE_nvx.Properties.Settings.Default.WinLeft;
+                this.Height = OrbitronDDE_nvx.Properties.Settings.Default.WinHeight;
+                this.Width = OrbitronDDE_nvx.Properties.Settings.Default.WinWidth;
+
+                cb_180.Text = OrbitronDDE_nvx.Properties.Settings.Default.cb180Text;
+
+                    // Przywracanie stanu okna (Zminimalizowane/Maksymalizowane/Normalne)
+                this.WindowState = (FormWindowState)OrbitronDDE_nvx.Properties.Settings.Default.WinState;
+                                        
+                }
             catch (Exception ex)
             {
                 displayTextBox.Text = "MainForm_Load: " + ex.Message;
@@ -175,6 +190,7 @@ namespace ClientWin
         {
             try
             {
+                int kk = Convert.ToInt32(cb_180.Text);
                 string output = "";
                 int i = input.IndexOf("AZ");
                 if (i > 1)
@@ -189,7 +205,7 @@ namespace ClientWin
                         double daz = Convert.ToDouble(ss);
                         daz = daz * 10.0;
                         int az = Convert.ToInt32(daz);
-                        az += 1800;
+                        az += (kk*10);
                         if ((az) >= 3600)
                             az = az - 3600;
                         az = az / 10;
@@ -341,7 +357,7 @@ namespace ClientWin
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            
+            int h = this.Height;
             this.Height = 76;
             try { client.Disconnect(); }
             catch { }
@@ -365,7 +381,19 @@ namespace ClientWin
             OrbitronDDE_nvx.Properties.Settings.Default._cbUM = cbUM.Checked;
             OrbitronDDE_nvx.Properties.Settings.Default._cbEL0 = cbEL0.Checked;
             OrbitronDDE_nvx.Properties.Settings.Default._cb180 = cb_180.Checked;
+            OrbitronDDE_nvx.Properties.Settings.Default._cb05s = cb_Predict500ms.Checked;
+
+            OrbitronDDE_nvx.Properties.Settings.Default.WinTop = this.Top;
+            OrbitronDDE_nvx.Properties.Settings.Default.WinLeft = this.Left;
+            OrbitronDDE_nvx.Properties.Settings.Default.WinHeight = h;
+            OrbitronDDE_nvx.Properties.Settings.Default.WinWidth = this.Width;
+            OrbitronDDE_nvx.Properties.Settings.Default.cb180Text = cb_180.Text;
+
+            // Przywracanie stanu okna (Zminimalizowane/Maksymalizowane/Normalne)
+            this.WindowState = (FormWindowState)OrbitronDDE_nvx.Properties.Settings.Default.WinState;
+
             OrbitronDDE_nvx.Properties.Settings.Default.Save();
+
             try { COM.Close(); }
             catch (Exception ex) { MessageBox.Show(ex.Message); };
         }
@@ -537,6 +565,30 @@ namespace ClientWin
                     timer_500.Enabled = false;
                 }catch { timer_500.Enabled = false; }
             }else timer_500.Enabled = false;
+        }
+
+        private void lb_minus_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                Int32 p = Convert.ToInt32(cb_180.Text);
+                p--;
+                if(p>=1 && p<=360)
+                    cb_180.Text = p.ToString();
+            }
+            catch { }
+        }
+
+        private void lb_plus_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                Int32 p = Convert.ToInt32(cb_180.Text);
+                p++;
+                if (p >= 1 && p <= 360)
+                    cb_180.Text = p.ToString();
+            }
+            catch { }
         }
     } // class
 
