@@ -519,14 +519,14 @@ namespace ClientWin
                     { dn = (long)Math.Round((double)((double)dn + (double)(dn - _dn) / 2L),MidpointRounding.AwayFromZero); }
                     else
                     ///{ dn = dn - ((_dn - dn) / 2L); } // maleje
-                    { dn = (long)Math.Round((double)((double)dn - (double)(dn - _dn) / 2L),MidpointRounding.AwayFromZero); }
+                    { dn = (long)Math.Round((double)((double)dn - (double)(_dn - dn) / 2L),MidpointRounding.AwayFromZero); }
                     // Obliczam predykcjê UP
                     if (_up < up) // roœnie
                     ///{ up = up + ((up - _up) / 2L); }
                     { up = (long)Math.Round((double)((double)up + (double)(up - _up) / 2L), MidpointRounding.AwayFromZero); }
                     else
                     ///{ up = up - ((_up - up) / 2L); } // maleje
-                    { up = (long)Math.Round((double)((double)up - (double)(up - _up) / 2L), MidpointRounding.AwayFromZero); }
+                    { up = (long)Math.Round((double)((double)up - (double)(_up - up) / 2L), MidpointRounding.AwayFromZero); }
                     if (COM.IsOpen)
                     {
                         cbOpenCOM.BackColor = Color.Chartreuse;
